@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+</head>
+<body>
+<div class="container-fluid mt-3 text-center">
+    <h1 class="display-1">Weather Station</h1>
+</div>
+<div class="container">
+    <canvas id="myChart"></canvas>
+</div>
+
+<!-- Optional JavaScript -->
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+<script src="http://momentjs.com/downloads/moment-with-locales.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+<script src="http://hammerjs.github.io/dist/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/0.6.3/chartjs-plugin-zoom.js"></script>
+<script>
+    moment().format();
+</script>
+<script>
+    let api = [];
+    let home = [];
+    let labels = [];
+    let data;
+    let chart;
+    var timeFormat = 'MM/DD/YYYY HH:mm';
+    $.ajax({
+
+        url: '/api/get',
+        type: 'GET',
+        dataType: 'json',
+        success: function (result) {
+            for (x in result) {
+                data = result;
+                console.log(result[x]);
+                api.push(
+                    {
+                        'x': new moment(result[x]["date"]),
+                        'y': result[x]['apitemp']
+                    }
+                );
+                home.push(
+                    {
+                        'x': new moment(result[x]["date"]),
+                        'y': result[x]['hometemp']
+                    }
+                )
+
+            }
+            var ctx = $('#myChart')[0].getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+//                    labels: labels,
+                    datasets: [{
+                        label: "Api",
+                        //backgroundColor: 'rgb(255, 99, 132)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: api
+                    }, {
+                        label: "Home Data",
+                        //backgroundColor: 'rgb(255, 99, 132)',
+                        borderColor: 'rgb(0, 99, 132)',
+                        data: home
+                    }]
+                },
+                options: {
+                    /*                  scales: {
+                                          xAxes: [{
+                                              type: "time",
+                                              display: true,
+                                              unit: 'hour',
+                                              distribution: 'series'
+                                          }]
+                                      },*/
+                    responsive: true,
+                    title: {
+                        display: true,
+                        text: "Chart.js Time Scale"
+                    },
+                    scales: {
+                        xAxes: [{
+                            type: "time",
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Date'
+                            },
+                            /*time: {
+                                format: "HH",
+                                unit: 'hour',
+                                unitStepSize: 2,
+                            }*/
+                        },],
+                        yAxes: [{
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Temp in Celsius'
+                            }
+                        }]
+                    },
+                    zoom: {
+                        enabled: true,
+                        mode: 'x',
+                    },
+                    pan: {
+                        enabled: true,
+                        mode: 'x'
+                    }
+                }
+
+
+            });
+            window.myLine = chart;
+        },
+        error: function (request, error) {
+            alert("Request: " + JSON.stringify(request));
+        }
+    });
+
+</script>
+</body>
+<footer>test</footer>
+</html>
