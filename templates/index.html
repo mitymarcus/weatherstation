@@ -103,8 +103,10 @@
             url: '/api/label',
             type: 'GET',
             dataType: 'json',
+            async: false,
             success: function (result) {
                 barlabels = result;
+                mixMaxBarChart
             }
         }
     );
@@ -243,7 +245,7 @@
             };
 
             let minmaxctx = $('#minMaxBarChart')[0].getContext('2d');
-            let minxMaxBarChart = new Chart(minmaxctx, {
+            let minMaxBarChart = new Chart(minmaxctx, {
                 type: 'bar',
                 data: minmaxdata,
                 options: {
