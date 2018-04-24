@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from time import sleep, localtime
 from flask import request
-
+# import yagmail
 import requests
 
 from flask import Flask, render_template
@@ -29,7 +29,27 @@ def api():
     cnxn = sqlite3.connect('data.db')
     cnxn.row_factory = dict_factory
     cur = cnxn.cursor()
-    data = cur.execute("SELECT date, label, apitemp, hometemp FROM temperature ORDER BY date ASC").fetchall()
+    data = cur.execute("SELECT date, label, apitemp, hometemp as hometemp FROM temperature ORDER BY date ASC").fetchall()
+    print(data)
+    cnxn.close()
+    return json.dumps(data)
+
+@app.route('/api/label')
+def label():
+    cnxn = sqlite3.connect('data.db')
+    cnxn.row_factory = dict_factory
+    cur = cnxn.cursor()
+    data = [x['label'] for x in cur.execute("SELECT DISTINCT label FROM temperature ORDER BY date ASC").fetchall()]
+    print(data)
+    cnxn.close()
+    return json.dumps(data)
+
+@app.route('/api/getavg')
+def avgapi():
+    cnxn = sqlite3.connect('data.db')
+    cnxn.row_factory = dict_factory
+    cur = cnxn.cursor()
+    data = cur.execute("SELECT date, label, min(apitemp) as minapitemp, max(apitemp) as maxapitemp, avg(apitemp) as avgapitemp, min(hometemp) as minhometemp, max(hometemp) as maxhometemp, avg(hometemp) as avghometemp  FROM temperature GROUP BY label ORDER BY date ASC").fetchall()
     print(data)
     cnxn.close()
     return json.dumps(data)
@@ -49,6 +69,7 @@ def api_insert():
     sqlstring = "INSERT INTO temperature (date, label, hometemp, apitemp) VALUES ('{}', '{}', {}, {})".format(datetime.now().timestamp() * 1000, strftime("%I%p", localtime()), data["hometemp"], api_temp)
     print(sqlstring)
     data = cur.execute(sqlstring).fetchone()
+
     cnxn.commit()
     cnxn.close()
 

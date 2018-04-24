@@ -8,16 +8,64 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+        html {
+            position: relative;
+            min-height: 100%;
+        }
 
-    <title>Hello, world!</title>
+        body {
+            margin-bottom: 60px; /* Margin bottom by footer height */
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px; /* Set the fixed height of the footer here */
+            line-height: 60px; /* Vertically center the text there */
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            width: 100%;
+            padding: 0 15px;
+        }
+    </style>
+    <title>Weather Station</title>
 </head>
 <body>
-<div class="container-fluid mt-3 text-center">
-    <h1 class="display-1">Weather Station</h1>
+<div class="Row">
+    <h1 class="display-1 text-center">Weather Station 1.0</h1>
 </div>
-<div class="container">
-    <canvas id="myChart"></canvas>
+<div class="row mt-3">
+    <div class="col-md-8">
+        <canvas id="myChart"></canvas>
+    </div>
+    <div class="col-md-3">
+        <h3 class="h3">What is this graph?</h3>
+        <div class="text-justified">This project is designed to show the world how terrible our insulation is in our
+            house.
+            We are using a thermistor (an electrical resistor whose resistance is greatly reduced by heating) to measure
+            the inside temperature, and using
+            <a href="https://openweathermap.org">Open Weather Map</a> to pull the data every 5 minutes. That data gets
+            stored into a sqlite3 database by sending the data from the Raspberry Pi to a VPS (Virtual Private Server) via
+            a cURL call. Then, the website browser pulls the data via an AJAX call, and pushes the data into these graphs.
+        </div>
+    </div>
+
 </div>
+<div class="row">
+    <div class="col-md-12">
+        <canvas id="minMaxBarChart"></canvas>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <canvas id="avgBarChart"></canvas>
+    </div>
+</div>
+
 
 <!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -41,7 +89,25 @@
     let labels = [];
     let data;
     let chart;
+
+    let barlabels = [];
+    let minapitemp = [];
+    let maxapitemp = [];
+    let avgapitemp = [];
+    let minhometemp = [];
+    let maxhometemp = [];
+    let avghometemp = [];
+    let minmaxdata;
     var timeFormat = 'MM/DD/YYYY HH:mm';
+    $.ajax({
+            url: '/api/label',
+            type: 'GET',
+            dataType: 'json',
+            success: function (result) {
+                barlabels = result;
+            }
+        }
+    );
     $.ajax({
 
         url: '/api/get',
@@ -54,13 +120,13 @@
                 api.push(
                     {
                         'x': new moment(result[x]["date"]),
-                        'y': result[x]['apitemp']
+                        'y': result[x]['apitemp'] * 1.8 + 32
                     }
                 );
                 home.push(
                     {
                         'x': new moment(result[x]["date"]),
-                        'y': result[x]['hometemp']
+                        'y': result[x]['hometemp'] * 1.8 + 32
                     }
                 )
 
@@ -71,12 +137,12 @@
                 data: {
 //                    labels: labels,
                     datasets: [{
-                        label: "Api",
+                        label: "Outside",
                         //backgroundColor: 'rgb(255, 99, 132)',
                         borderColor: 'rgb(255, 99, 132)',
                         data: api
                     }, {
-                        label: "Home Data",
+                        label: "Inside",
                         //backgroundColor: 'rgb(255, 99, 132)',
                         borderColor: 'rgb(0, 99, 132)',
                         data: home
@@ -94,7 +160,7 @@
                     responsive: true,
                     title: {
                         display: true,
-                        text: "Chart.js Time Scale"
+                        text: "Temperature Inside/Outside My House"
                     },
                     scales: {
                         xAxes: [{
@@ -112,7 +178,7 @@
                         yAxes: [{
                             scaleLabel: {
                                 display: true,
-                                labelString: 'Temp in Celsius'
+                                labelString: 'Temp in Fahrenheit'
                             }
                         }]
                     },
@@ -134,8 +200,113 @@
             alert("Request: " + JSON.stringify(request));
         }
     });
+    $.ajax({
+
+        url: '/api/getavg',
+        type: 'GET',
+        dataType: 'json',
+        success: function (result) {
+            for (x in result) {
+                data = result;
+                console.warn(result[x]);
+                minapitemp.push(result[x]['minapitemp'] * 1.8 + 32);
+                maxapitemp.push(result[x]['maxapitemp'] * 1.8 + 32);
+                avgapitemp.push(result[x]['avgapitemp'] * 1.8 + 32);
+                minhometemp.push(result[x]['minhometemp'] * 1.8 + 32);
+                maxhometemp.push(result[x]['maxhometemp'] * 1.8 + 32);
+                avghometemp.push(result[x]['avghometemp'] * 1.8 + 32);
+            }
+            minmaxdata = {
+                labels: barlabels,
+                datasets: [
+                    {
+                        label: "Inside Min Temp",
+                        backgroundColor: "#74cdf4",
+                        data: minhometemp
+                    },
+                    {
+                        label: "Inside Max Temp",
+                        backgroundColor: "#f49497",
+                        data: maxhometemp
+                    },
+                    {
+                        label: "Outside Min Temp",
+                        backgroundColor: '#4759f4',
+                        data: minapitemp
+                    },
+                    {
+                        label: "Outside Max Temp",
+                        backgroundColor: "#f43941",
+                        data: maxapitemp
+                    }
+                ]
+            };
+
+            let minmaxctx = $('#minMaxBarChart')[0].getContext('2d');
+            let minxMaxBarChart = new Chart(minmaxctx, {
+                type: 'bar',
+                data: minmaxdata,
+                options: {
+                    title: {
+                        display: true,
+                        text: "Min Temp. vs Max Temp. per hr of All Data"
+                    },
+                    barValueSpacing: 20,
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                min: 0,
+                            }
+                        }]
+                    }
+                }
+            });
+
+            avgdata = {
+                labels: barlabels,
+                datasets: [
+                    {
+                        label: "Inside Average Temp",
+                        backgroundColor: "#474cff",
+                        data: avghometemp
+                    },
+                    {
+                        label: "Outside Average Temp",
+                        backgroundColor: "#f43941",
+                        data: avgapitemp
+                    }
+                ]
+            };
+
+            let avgctx = $('#avgBarChart')[0].getContext('2d');
+
+
+            let avgBarChart = new Chart(avgctx, {
+                type: 'bar',
+                data: avgdata,
+                options: {
+                    title: {
+                        display: true,
+                        text: "Average temperature per hr. Over All Data"
+                    },
+                    barValueSpacing: 20,
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                min: 0,
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+    });
 
 </script>
+
+<footer class="footer">
+    <div class="container"><p class="text-right font-weight-light font-italic"> Marcus Mann 2018</p>
+    </div>
+</footer>
 </body>
-<footer>test</footer>
 </html>
